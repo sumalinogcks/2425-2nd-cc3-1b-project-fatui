@@ -1,5 +1,5 @@
 
-public class Entity {
+public abstact class Entity {
 
     private String name; 
     private String email;
