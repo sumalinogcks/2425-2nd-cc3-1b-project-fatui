@@ -1,7 +1,7 @@
 
-public class Entity {
-    
-    private String name;
+public abstract class Entity {
+
+    private String name; 
     private String email;
     private int id;
     private int contactNo;
@@ -29,14 +29,21 @@ public class Entity {
 
     public String getName(){
         return name;
-    }
+    } 
 
     public int getId(){
         return id;
     }
 
+    public int getContactNo(){
+        return contactNo;
+    }
+
     public String getEmail(){
         return email;
     }
+
+
+
 
 }
