@@ -32,13 +32,6 @@ public class UI {
         availableCourses.add("Biology");
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            UI ui = new UI();
-            ui.createLoginGUI();
-        });
-    }
-
     public void createLoginGUI() {
         JFrame frame = new JFrame("Student Management System");
         frame.setSize(800, 600);
