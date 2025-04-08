@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.*;
 import java.util.List;
+import javax.swing.table.DefaultTableModel;
 
 public class UI {
     // Data storage
@@ -643,147 +644,141 @@ public class UI {
 }
 
 
-public class TeacherDashboard {
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("Teacher Dashboard");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1200, 800);
-        frame.setLayout(new BorderLayout(10, 10));
+public class TeacherDashboard extends JFrame {
+    private JTable studentTable;
+    private DefaultTableModel tableModel;
+    private JTextField nameField, gradeField, idField;
 
-        // Title
-        JLabel title = new JLabel("Timetable", SwingConstants.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 24));
-        frame.add(title, BorderLayout.NORTH);
+    public TeacherDashboard() {
+        setTitle("Student Management Dashboard");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
 
-        // My Classes Panel (West) - Interactive version
-        JPanel myClassesPanel = createClassesPanel();
-        frame.add(myClassesPanel, BorderLayout.WEST);
-
-        // Timetable Table (Center)
-        JTable timetable = createTimetable();
-        frame.add(new JScrollPane(timetable), BorderLayout.CENTER);
-
-        // Right Panel (East)
-        frame.add(createRightPanel(), BorderLayout.EAST);
-
-        // Bottom Panel (South)
-        frame.add(createBottomPanel(), BorderLayout.SOUTH);
-
-        frame.setVisible(true);
-    }
-
-    private static JPanel createClassesPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder("My Classes"));
+        // Table setup
+        String[] columns = {"ID", "Student Name", "Grade"};
+        tableModel = new DefaultTableModel(columns, 0);
+        studentTable = new JTable(tableModel);
+        studentTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(studentTable);
         
-        String[] items = {"My students", "Attendance", "Incidents", "Homework", "Assignments", "Term marking"};
-        for (String item : items) {
-            JLabel label = createClickableLabel(item);
-            panel.add(label);
-            panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        }
-        return panel;
-    }
+        // Form panel
+        JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        idField = new JTextField();
+        nameField = new JTextField();
+        gradeField = new JTextField();
+        
+        formPanel.add(new JLabel("Student ID:"));
+        formPanel.add(idField);
+        formPanel.add(new JLabel("Student Name:"));
+        formPanel.add(nameField);
+        formPanel.add(new JLabel("Grade:"));
+        formPanel.add(gradeField);
 
-    private static JLabel createClickableLabel(String text) {
-        JLabel label = new JLabel("• " + text);
-        label.setOpaque(true);
-        label.setForeground(Color.BLUE.darker());
-        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        label.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                handleClassItemClick(text);
-            }
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        JButton addButton = createStyledButton("Add Student", Color.GREEN);
+        JButton updateButton = createStyledButton("Update Student", Color.ORANGE);
+        JButton deleteButton = createStyledButton("Delete Student", Color.RED);
 
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                label.setForeground(Color.BLUE);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                label.setForeground(Color.BLUE.darker());
+        // Add action listeners
+        addButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                addStudent();
             }
         });
-        return label;
+
+        updateButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                updateStudent();
+            }
+        });
+
+        deleteButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                deleteStudent();
+            }
+        });
+
+        buttonPanel.add(addButton);
+        buttonPanel.add(updateButton);
+        buttonPanel.add(deleteButton);
+
+        // Add components to frame
+        add(formPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        // Table selection listener
+        studentTable.getSelectionModel().addListSelectionListener(e -> {
+            int selectedRow = studentTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                idField.setText(tableModel.getValueAt(selectedRow, 0).toString());
+                nameField.setText(tableModel.getValueAt(selectedRow, 1).toString());
+                gradeField.setText(tableModel.getValueAt(selectedRow, 2).toString());
+            }
+        });
+
+        setVisible(true);
     }
 
-    private static void handleClassItemClick(String itemName) {
-        System.out.println("Clicked: " + itemName);  // Replace with actual navigation
-        JOptionPane.showMessageDialog(null, 
-            "Opening: " + itemName, 
-            "Navigation", 
-            JOptionPane.INFORMATION_MESSAGE);
+    private JButton createStyledButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setPreferredSize(new Dimension(150, 40));
+        return button;
     }
 
-    private static JTable createTimetable() {
-        String[] columns = {"", "Mon 07", "Tue 08", "Wed 09", "Thu 10", "Fri 11", "Sat 12", "Sun 13"};
-        Object[][] data = {
-            {"Algebra", "8:00 am - 10:00 am", "ASSIGNMENT", "", "", "", "", ""},
-            {"Arithmetic", "11:00 am - 12:00 pm", "", "", "", "", "", ""},
-            {"Geometry", "02:00 pm - 03:00 pm", "HOMEWORK", "", "", "", "", ""},
-            {"Trigonometry", "03:00 pm - 04:00 pm", "ASSIGNMENT", "", "", "", "", ""},
-            {"Staff meeting", "04:00 pm - 05:00 pm", "", "", "", "", "", ""},
-            {"Parent teacher meeting", "05:00 pm - 06:00 pm", "", "", "", "", "", ""},
-            {"Room 104", "", "", "", "", "", "", ""}
-        };
-
-     DefaultTableModel model = new DefaultTableModel(data, columns) {
-    @Override
-    public boolean isCellEditable(int row, int column) {
-        return false; // Makes all cells non-editable
-    }
-};
-        JTable table = new JTable(model);
-        table.setRowHeight(30);
-        return table;
-    }
-
-    private static JPanel createRightPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        
-        // Key Indicators
-        JPanel indicators = new JPanel();
-        indicators.setLayout(new BoxLayout(indicators, BoxLayout.Y_AXIS));
-        indicators.setBorder(BorderFactory.createTitledBorder("Key indicators"));
-        String[] items = {"ABSENCES", "INCIDENTS", "+25% last week"};
-        for (String item : items) {
-            indicators.add(new JLabel("• " + item));
+    private void addStudent() {
+        if (validateFields()) {
+            String[] row = {
+                idField.getText(),
+                nameField.getText(),
+                gradeField.getText()
+            };
+            tableModel.addRow(row);
+            clearFields();
         }
-        
-        // Tasks
-        JPanel tasks = new JPanel(new BorderLayout());
-        tasks.setBorder(BorderFactory.createTitledBorder("Tasks"));
-        tasks.add(new JLabel("This week ▼"), BorderLayout.NORTH);
-        
-        // Assignments
-        JPanel assignments = new JPanel(new BorderLayout());
-        assignments.setBorder(BorderFactory.createTitledBorder("Assignments"));
-        assignments.add(new JLabel("Homeworks"), BorderLayout.NORTH);
-        
-        panel.add(indicators);
-        panel.add(tasks);
-        panel.add(assignments);
-        return panel;
     }
 
-    private static JPanel createBottomPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        panel.add(new JLabel("Perimeter & Area of Polygons"));
-        panel.add(new JLabel("Monday, December 7th, 2020"));
-        
-        String[] mathItems = {"Polynomial equations - Today", 
-                            "Properties of Trigonometric Functions - Today",
-                            "Pythagorean theorem - Tomorrow"};
-        for (String item : mathItems) {
-            panel.add(new JLabel(item));
+    private void updateStudent() {
+        int selectedRow = studentTable.getSelectedRow();
+        if (selectedRow >= 0 && validateFields()) {
+            tableModel.setValueAt(idField.getText(), selectedRow, 0);
+            tableModel.setValueAt(nameField.getText(), selectedRow, 1);
+            tableModel.setValueAt(gradeField.getText(), selectedRow, 2);
+            clearFields();
         }
-        return panel;
+    }
+
+    private void deleteStudent() {
+        int selectedRow = studentTable.getSelectedRow();
+        if (selectedRow >= 0) {
+            tableModel.removeRow(selectedRow);
+            clearFields();
+        }
+    }
+
+    private boolean validateFields() {
+        if (idField.getText().isEmpty() || nameField.getText().isEmpty() || gradeField.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    private void clearFields() {
+        idField.setText("");
+        nameField.setText("");
+        gradeField.setText("");
+    }
+
+    public static void main(String[] args) {
+        new TeacherDashboard();
     }
 }
