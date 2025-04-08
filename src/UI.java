@@ -235,7 +235,17 @@ public class UI {
             panel.add(enrollCourseBtn, gbc);
         }
         
+        // Add logout button
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> {
+            dashboard.dispose();
+            createGUI();
+        });
+        bottomPanel.add(logoutButton);
+        
         dashboard.add(panel, BorderLayout.CENTER);
+        dashboard.add(bottomPanel, BorderLayout.SOUTH);
         dashboard.setLocationRelativeTo(null);
         dashboard.setVisible(true);
     }
