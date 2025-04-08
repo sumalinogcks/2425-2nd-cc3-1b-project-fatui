@@ -33,13 +33,6 @@ public class UI {
         availableCourses.add("Biology");
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            UI ui = new UI();
-            ui.createLoginGUI();
-        });
-    }
-
     public void createLoginGUI() {
         JFrame frame = new JFrame("Student Management System");
         frame.setSize(800, 600);
@@ -642,8 +635,6 @@ public class UI {
         coursesFrame.setVisible(true);
     }
 }
-
-
 public class TeacherDashboard extends JFrame {
     private JTable studentTable;
     private DefaultTableModel tableModel;
@@ -782,3 +773,5 @@ public class TeacherDashboard extends JFrame {
         new TeacherDashboard();
     }
 }
+
+

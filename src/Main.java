@@ -2,6 +2,9 @@ import javax.swing.SwingUtilities;
 
 public class Main {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new UI().createGUI());
+        SwingUtilities.invokeLater(() -> {
+            UI ui = new UI();
+            ui.createLoginGUI();
+        });
     }
 }
