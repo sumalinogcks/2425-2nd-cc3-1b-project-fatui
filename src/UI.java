@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.*;
 import java.util.List;
+import javax.swing.table.DefaultTableModel;
 
 public class UI {
     // Data storage
@@ -634,3 +635,143 @@ public class UI {
         coursesFrame.setVisible(true);
     }
 }
+public class TeacherDashboard extends JFrame {
+    private JTable studentTable;
+    private DefaultTableModel tableModel;
+    private JTextField nameField, gradeField, idField;
+
+    public TeacherDashboard() {
+        setTitle("Student Management Dashboard");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+
+        // Table setup
+        String[] columns = {"ID", "Student Name", "Grade"};
+        tableModel = new DefaultTableModel(columns, 0);
+        studentTable = new JTable(tableModel);
+        studentTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(studentTable);
+        
+        // Form panel
+        JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        idField = new JTextField();
+        nameField = new JTextField();
+        gradeField = new JTextField();
+        
+        formPanel.add(new JLabel("Student ID:"));
+        formPanel.add(idField);
+        formPanel.add(new JLabel("Student Name:"));
+        formPanel.add(nameField);
+        formPanel.add(new JLabel("Grade:"));
+        formPanel.add(gradeField);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        JButton addButton = createStyledButton("Add Student", Color.GREEN);
+        JButton updateButton = createStyledButton("Update Student", Color.ORANGE);
+        JButton deleteButton = createStyledButton("Delete Student", Color.RED);
+
+        // Add action listeners
+        addButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                addStudent();
+            }
+        });
+
+        updateButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                updateStudent();
+            }
+        });
+
+        deleteButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                deleteStudent();
+            }
+        });
+
+        buttonPanel.add(addButton);
+        buttonPanel.add(updateButton);
+        buttonPanel.add(deleteButton);
+
+        // Add components to frame
+        add(formPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        // Table selection listener
+        studentTable.getSelectionModel().addListSelectionListener(e -> {
+            int selectedRow = studentTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                idField.setText(tableModel.getValueAt(selectedRow, 0).toString());
+                nameField.setText(tableModel.getValueAt(selectedRow, 1).toString());
+                gradeField.setText(tableModel.getValueAt(selectedRow, 2).toString());
+            }
+        });
+
+        setVisible(true);
+    }
+
+    private JButton createStyledButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setPreferredSize(new Dimension(150, 40));
+        return button;
+    }
+
+    private void addStudent() {
+        if (validateFields()) {
+            String[] row = {
+                idField.getText(),
+                nameField.getText(),
+                gradeField.getText()
+            };
+            tableModel.addRow(row);
+            clearFields();
+        }
+    }
+
+    private void updateStudent() {
+        int selectedRow = studentTable.getSelectedRow();
+        if (selectedRow >= 0 && validateFields()) {
+            tableModel.setValueAt(idField.getText(), selectedRow, 0);
+            tableModel.setValueAt(nameField.getText(), selectedRow, 1);
+            tableModel.setValueAt(gradeField.getText(), selectedRow, 2);
+            clearFields();
+        }
+    }
+
+    private void deleteStudent() {
+        int selectedRow = studentTable.getSelectedRow();
+        if (selectedRow >= 0) {
+            tableModel.removeRow(selectedRow);
+            clearFields();
+        }
+    }
+
+    private boolean validateFields() {
+        if (idField.getText().isEmpty() || nameField.getText().isEmpty() || gradeField.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    private void clearFields() {
+        idField.setText("");
+        nameField.setText("");
+        gradeField.setText("");
+    }
+
+    public static void main(String[] args) {
+        new TeacherDashboard();
+    }
+}
+
+
