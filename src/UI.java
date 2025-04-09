@@ -7,17 +7,19 @@ import java.util.List;
 
 public class UI {
     // Data storage
-    private static final Map<String, String> adminCredentials = new HashMap<>();
     private static final Map<String, String> teacherCredentials = new HashMap<>();
     private static final Map<String, String> studentCredentials = new HashMap<>();
     private static final Map<String, List<String>> studentCourses = new HashMap<>();
     private static final Map<String, Map<String, Integer>> studentGrades = new HashMap<>();
     private static final Map<String, String[]> studentInfo = new HashMap<>();
     private static final List<String> availableCourses = new ArrayList<>();
+    
+    // Track current user
+    private static String currentUser;
+    private static String currentRole;
 
     static {
         // Initialize with sample data
-        adminCredentials.put("admin", "adminpass");
         teacherCredentials.put("teacher1", "teacherpass");
         studentCredentials.put("student1", "studentpass");
         studentInfo.put("student1", new String[]{"John Doe", "S1001"});
@@ -37,7 +39,6 @@ public class UI {
         frame.setSize(800, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new GridBagLayout());
-        
         
         // Main panel with card layout for different views
         JPanel mainPanel = new JPanel(new CardLayout());
@@ -98,7 +99,7 @@ public class UI {
         gbc.anchor = GridBagConstraints.LINE_END;
         formPanel.add(new JLabel("Role:"), gbc);
         
-        String[] roles = {"Admin", "Teacher", "Student"};
+        String[] roles = {"Teacher", "Student"};
         JComboBox<String> roleDropdown = new JComboBox<>(roles);
         roleDropdown.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         gbc.gridx = 1;
@@ -116,7 +117,6 @@ public class UI {
         styleButton(loginButton, new Color(70, 130, 180));
         loginButton.setPreferredSize(new Dimension(120, 35));
         formPanel.add(loginButton, gbc);
-        
         
         // Add form panel to login panel
         gbc = new GridBagConstraints();
@@ -137,7 +137,6 @@ public class UI {
         registerButton.addActionListener(e -> showRegistrationDialog(frame));
         loginPanel.add(registerButton, gbc);
 
-        
         loginButton.addActionListener(e -> {
             String username = userText.getText().trim();
             String password = new String(passwordText.getPassword()).trim();
@@ -149,6 +148,8 @@ public class UI {
             }
             
             if (authenticate(username, password, role)) {
+                currentUser = username;
+                currentRole = role;
                 openDashboard(role, username);
                 frame.dispose();
             } else {
@@ -283,8 +284,6 @@ public class UI {
 
     private boolean authenticate(String username, String password, String role) {
         switch (role) {
-            case "Admin":
-                return adminCredentials.containsKey(username) && adminCredentials.get(username).equals(password);
             case "Teacher":
                 return teacherCredentials.containsKey(username) && teacherCredentials.get(username).equals(password);
             case "Student":
@@ -325,9 +324,13 @@ public class UI {
         
         if (role.equals("Teacher")) {
             addDashboardCard(cardsPanel, "View Students", "View all registered students", 
-                new Color(70, 130, 180), e -> viewStudents());
+                new Color(70, 130, 180), e -> viewStudents(dashboard));
             addDashboardCard(cardsPanel, "Enter Grades", "Enter student grades", 
-                new Color(60, 179, 113), e -> enterGrades());
+                new Color(60, 179, 113), e -> enterGrades(dashboard));
+            addDashboardCard(cardsPanel, "Update Student", "Modify student information", 
+                new Color(186, 85, 211), e -> updateStudent(dashboard));
+            addDashboardCard(cardsPanel, "Delete Student", "Remove a student from system", 
+                new Color(220, 20, 60), e -> deleteStudent(dashboard));
         } else if (role.equals("Student")) {
             String[] studentInfo = this.studentInfo.get(username);
             if (studentInfo != null) {
@@ -345,11 +348,11 @@ public class UI {
             }
             
             addDashboardCard(cardsPanel, "View My Grades", "Check your course grades", 
-                new Color(70, 130, 180), e -> viewGrades(username));
+                new Color(70, 130, 180), e -> viewGrades(username, dashboard));
             addDashboardCard(cardsPanel, "View My Courses", "See your enrolled courses", 
-                new Color(60, 179, 113), e -> viewCourses(username));
+                new Color(60, 179, 113), e -> viewCourses(username, dashboard));
             addDashboardCard(cardsPanel, "Enroll in Course", "Register for new courses", 
-                new Color(186, 85, 211), e -> enrollCourse(username));
+                new Color(186, 85, 211), e -> enrollCourse(username, dashboard));
         }
         
         mainPanel.add(cardsPanel, BorderLayout.CENTER);
@@ -409,11 +412,11 @@ public class UI {
         panel.add(card);
     }
     
-    private void enrollCourse(String username) {
-        JFrame enrollFrame = new JFrame("Enroll in Course");
-        enrollFrame.setSize(400, 300);
-        enrollFrame.setLayout(new BorderLayout());
-        enrollFrame.getContentPane().setBackground(new Color(240, 245, 250));
+    private void enrollCourse(String username, JFrame parentFrame) {
+        JDialog enrollDialog = new JDialog(parentFrame, "Enroll in Course", true);
+        enrollDialog.setSize(400, 300);
+        enrollDialog.setLayout(new BorderLayout());
+        enrollDialog.getContentPane().setBackground(new Color(240, 245, 250));
         
         // Get courses not already enrolled in
         List<String> enrolledCourses = studentCourses.getOrDefault(username, new ArrayList<>());
@@ -421,8 +424,8 @@ public class UI {
         enrollableCourses.removeAll(enrolledCourses);
         
         if (enrollableCourses.isEmpty()) {
-            showMessageDialog(enrollFrame, "You're already enrolled in all available courses!", "Info", false);
-            enrollFrame.dispose();
+            showMessageDialog(enrollDialog, "You're already enrolled in all available courses!", "Info", false);
+            enrollDialog.dispose();
             return;
         }
         
@@ -447,21 +450,23 @@ public class UI {
         enrollButton.addActionListener(e -> {
             String selectedCourse = (String) courseDropdown.getSelectedItem();
             studentCourses.computeIfAbsent(username, k -> new ArrayList<>()).add(selectedCourse);
-            showMessageDialog(enrollFrame, "Successfully enrolled in " + selectedCourse, "Success", false);
-            enrollFrame.dispose();
+            showMessageDialog(enrollDialog, "Successfully enrolled in " + selectedCourse, "Success", false);
+            enrollDialog.dispose();
+            parentFrame.dispose();
+            openDashboard(currentRole, currentUser);
         });
         
         panel.add(enrollButton, gbc);
-        enrollFrame.add(panel, BorderLayout.CENTER);
-        enrollFrame.setLocationRelativeTo(null);
-        enrollFrame.setVisible(true);
+        enrollDialog.add(panel, BorderLayout.CENTER);
+        enrollDialog.setLocationRelativeTo(parentFrame);
+        enrollDialog.setVisible(true);
     }
 
-    private void viewStudents() {
-        JFrame studentFrame = new JFrame("Student List");
-        studentFrame.setSize(500, 400);
-        studentFrame.setLayout(new BorderLayout());
-        studentFrame.getContentPane().setBackground(new Color(240, 245, 250));
+    private void viewStudents(JFrame parentFrame) {
+        JDialog studentDialog = new JDialog(parentFrame, "Student List", true);
+        studentDialog.setSize(500, 400);
+        studentDialog.setLayout(new BorderLayout());
+        studentDialog.getContentPane().setBackground(new Color(240, 245, 250));
         
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -477,21 +482,22 @@ public class UI {
                 .append("\nName: ").append(info[0])
                 .append("\nID: ").append(info[1])
                 .append("\nCourses: ").append(studentCourses.get(username))
+                .append("\nGrades: ").append(studentGrades.get(username))
                 .append("\n\n"));
 
         studentTextArea.setText(studentList.toString());
         panel.add(new JScrollPane(studentTextArea), BorderLayout.CENTER);
         
-        studentFrame.add(panel, BorderLayout.CENTER);
-        studentFrame.setLocationRelativeTo(null);
-        studentFrame.setVisible(true);
+        studentDialog.add(panel, BorderLayout.CENTER);
+        studentDialog.setLocationRelativeTo(parentFrame);
+        studentDialog.setVisible(true);
     }
 
-    private void enterGrades() {
-        JFrame gradeFrame = new JFrame("Enter Grades");
-        gradeFrame.setSize(600, 450);
-        gradeFrame.setLayout(new BorderLayout());
-        gradeFrame.getContentPane().setBackground(new Color(240, 245, 250));
+    private void enterGrades(JFrame parentFrame) {
+        JDialog gradeDialog = new JDialog(parentFrame, "Enter Grades", true);
+        gradeDialog.setSize(600, 450);
+        gradeDialog.setLayout(new BorderLayout());
+        gradeDialog.getContentPane().setBackground(new Color(240, 245, 250));
         
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -513,7 +519,7 @@ public class UI {
         gradeLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         inputPanel.add(gradeLabel);
         
-        Map<JComboBox<String>, JTextField> gradeEntries = new HashMap<>();
+        Map<String, Map<JComboBox<String>, JTextField>> studentGradeEntries = new HashMap<>();
         
         for (String student : studentInfo.keySet()) {
             JLabel studentName = new JLabel(student);
@@ -531,7 +537,9 @@ public class UI {
             gradeField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
             inputPanel.add(gradeField);
             
-            gradeEntries.put(courseDropdown, gradeField);
+            Map<JComboBox<String>, JTextField> gradeEntry = new HashMap<>();
+            gradeEntry.put(courseDropdown, gradeField);
+            studentGradeEntries.put(student, gradeEntry);
         }
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -540,24 +548,26 @@ public class UI {
         JButton submitButton = new JButton("Submit Grades");
         styleButton(submitButton, new Color(70, 130, 180));
         submitButton.addActionListener(e -> {
-            for (Map.Entry<JComboBox<String>, JTextField> entry : gradeEntries.entrySet()) {
-                String course = (String) entry.getKey().getSelectedItem();
-                String gradeText = entry.getValue().getText();
-                
-                if (!gradeText.isEmpty()) {
-                    try {
-                        int grade = Integer.parseInt(gradeText);
-                        // In a real application, you would save this grade to the student's record
-                        showMessageDialog(gradeFrame, 
-                            "Grades submitted (simulation - not actually saved)", "Success", false);
-                    } catch (NumberFormatException ex) {
-                        showMessageDialog(gradeFrame, 
-                            "Invalid grade format for one or more entries", "Error", true);
-                        return;
+            for (Map.Entry<String, Map<JComboBox<String>, JTextField>> studentEntry : studentGradeEntries.entrySet()) {
+                String student = studentEntry.getKey();
+                for (Map.Entry<JComboBox<String>, JTextField> entry : studentEntry.getValue().entrySet()) {
+                    String course = (String) entry.getKey().getSelectedItem();
+                    String gradeText = entry.getValue().getText();
+                    
+                    if (!gradeText.isEmpty()) {
+                        try {
+                            int grade = Integer.parseInt(gradeText);
+                            studentGrades.get(student).put(course, grade);
+                        } catch (NumberFormatException ex) {
+                            showMessageDialog(gradeDialog, 
+                                "Invalid grade format for " + student + " in " + course, "Error", true);
+                            return;
+                        }
                     }
                 }
             }
-            gradeFrame.dispose();
+            showMessageDialog(gradeDialog, "Grades submitted successfully", "Success", false);
+            gradeDialog.dispose();
         });
         
         buttonPanel.add(submitButton);
@@ -565,16 +575,16 @@ public class UI {
         panel.add(new JScrollPane(inputPanel), BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
         
-        gradeFrame.add(panel, BorderLayout.CENTER);
-        gradeFrame.setLocationRelativeTo(null);
-        gradeFrame.setVisible(true);
+        gradeDialog.add(panel, BorderLayout.CENTER);
+        gradeDialog.setLocationRelativeTo(parentFrame);
+        gradeDialog.setVisible(true);
     }
 
-    private void viewGrades(String username) {
-        JFrame gradesFrame = new JFrame("Your Grades");
-        gradesFrame.setSize(400, 300);
-        gradesFrame.setLayout(new BorderLayout());
-        gradesFrame.getContentPane().setBackground(new Color(240, 245, 250));
+    private void viewGrades(String username, JFrame parentFrame) {
+        JDialog gradesDialog = new JDialog(parentFrame, "Your Grades", true);
+        gradesDialog.setSize(400, 300);
+        gradesDialog.setLayout(new BorderLayout());
+        gradesDialog.getContentPane().setBackground(new Color(240, 245, 250));
         
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -597,16 +607,16 @@ public class UI {
         gradesText.setText(sb.toString());
         panel.add(new JScrollPane(gradesText), BorderLayout.CENTER);
         
-        gradesFrame.add(panel, BorderLayout.CENTER);
-        gradesFrame.setLocationRelativeTo(null);
-        gradesFrame.setVisible(true);
+        gradesDialog.add(panel, BorderLayout.CENTER);
+        gradesDialog.setLocationRelativeTo(parentFrame);
+        gradesDialog.setVisible(true);
     }
     
-    private void viewCourses(String username) {
-        JFrame coursesFrame = new JFrame("My Courses");
-        coursesFrame.setSize(400, 300);
-        coursesFrame.setLayout(new BorderLayout());
-        coursesFrame.getContentPane().setBackground(new Color(240, 245, 250));
+    private void viewCourses(String username, JFrame parentFrame) {
+        JDialog coursesDialog = new JDialog(parentFrame, "My Courses", true);
+        coursesDialog.setSize(400, 300);
+        coursesDialog.setLayout(new BorderLayout());
+        coursesDialog.getContentPane().setBackground(new Color(240, 245, 250));
         
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -629,8 +639,176 @@ public class UI {
         coursesText.setText(sb.toString());
         panel.add(new JScrollPane(coursesText), BorderLayout.CENTER);
         
-        coursesFrame.add(panel, BorderLayout.CENTER);
-        coursesFrame.setLocationRelativeTo(null);
-        coursesFrame.setVisible(true);
+        coursesDialog.add(panel, BorderLayout.CENTER);
+        coursesDialog.setLocationRelativeTo(parentFrame);
+        coursesDialog.setVisible(true);
     }
+
+    private void deleteStudent(JFrame parentFrame) {
+        if (studentInfo.isEmpty()) {
+            showMessageDialog(parentFrame, "No students to delete", "Info", false);
+            return;
+        }
+
+        JDialog deleteDialog = new JDialog(parentFrame, "Delete Student", true);
+        deleteDialog.setSize(400, 200);
+        deleteDialog.setLayout(new BorderLayout());
+        deleteDialog.getContentPane().setBackground(new Color(240, 245, 250));
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setBackground(Color.WHITE);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 15, 5);
+        gbc.gridwidth = GridBagConstraints.REMAINDER;
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        panel.add(new JLabel("Select student to delete:"), gbc);
+
+        gbc.insets = new Insets(5, 5, 5, 5);
+        JComboBox<String> studentDropdown = new JComboBox<>(studentInfo.keySet().toArray(new String[0]));
+        studentDropdown.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        panel.add(studentDropdown, gbc);
+
+        JButton deleteButton = new JButton("Delete");
+        styleButton(deleteButton, new Color(220, 20, 60));
+        deleteButton.addActionListener(e -> {
+            String selectedStudent = (String) studentDropdown.getSelectedItem();
+            int confirm = JOptionPane.showConfirmDialog(deleteDialog, 
+                "Are you sure you want to delete " + selectedStudent + "?", 
+                "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                studentCredentials.remove(selectedStudent);
+                studentInfo.remove(selectedStudent);
+                studentCourses.remove(selectedStudent);
+                studentGrades.remove(selectedStudent);
+                showMessageDialog(deleteDialog, "Student deleted successfully", "Success", false);
+                deleteDialog.dispose();
+                parentFrame.dispose();
+                openDashboard(currentRole, currentUser);
+            }
+        });
+
+        panel.add(deleteButton, gbc);
+        deleteDialog.add(panel, BorderLayout.CENTER);
+        deleteDialog.setLocationRelativeTo(parentFrame);
+        deleteDialog.setVisible(true);
+    }
+
+    private void updateStudent(JFrame parentFrame) {
+        if (studentInfo.isEmpty()) {
+            showMessageDialog(parentFrame, "No students to update", "Info", false);
+            return;
+        }
+
+        JDialog updateDialog = new JDialog(parentFrame, "Update Student", true);
+        updateDialog.setSize(500, 350);
+        updateDialog.setLayout(new BorderLayout());
+        updateDialog.getContentPane().setBackground(new Color(240, 245, 250));
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setBackground(Color.WHITE);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.LINE_END;
+
+        // Student selection
+        gbc.gridy = 0;
+        gbc.gridx = 0;
+        panel.add(new JLabel("Select student:"), gbc);
+
+        JComboBox<String> studentDropdown = new JComboBox<>(studentInfo.keySet().toArray(new String[0]));
+        studentDropdown.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(studentDropdown, gbc);
+
+        // Name field
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        panel.add(new JLabel("Full Name:"), gbc);
+
+        JTextField nameField = new JTextField(20);
+        nameField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(nameField, gbc);
+
+        // ID field
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        panel.add(new JLabel("Student ID:"), gbc);
+
+        JTextField idField = new JTextField(20);
+        idField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(idField, gbc);
+
+        // Password field
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        panel.add(new JLabel("New Password:"), gbc);
+
+        JPasswordField passField = new JPasswordField(20);
+        passField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(passField, gbc);
+
+        // Load button
+        gbc.gridy = 4;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        JButton loadButton = new JButton("Load Student Data");
+        styleButton(loadButton, new Color(100, 150, 200));
+        loadButton.addActionListener(e -> {
+            String selectedStudent = (String) studentDropdown.getSelectedItem();
+            String[] info = studentInfo.get(selectedStudent);
+            nameField.setText(info[0]);
+            idField.setText(info[1]);
+        });
+        panel.add(loadButton, gbc);
+
+        // Update button
+        gbc.gridy = 5;
+        JButton updateButton = new JButton("Update Student");
+        styleButton(updateButton, new Color(70, 130, 180));
+        updateButton.addActionListener(e -> {
+            String selectedStudent = (String) studentDropdown.getSelectedItem();
+            String name = nameField.getText().trim();
+            String id = idField.getText().trim();
+            String password = new String(passField.getPassword()).trim();
+
+            if (name.isEmpty() || id.isEmpty()) {
+                showMessageDialog(updateDialog, "Name and ID cannot be empty", "Error", true);
+                return;
+            }
+
+            studentInfo.put(selectedStudent, new String[]{name, id});
+            
+            if (!password.isEmpty()) {
+                studentCredentials.put(selectedStudent, password);
+            }
+
+            showMessageDialog(updateDialog, "Student updated successfully", "Success", false);
+            updateDialog.dispose();
+            parentFrame.dispose();
+            openDashboard(currentRole, currentUser);
+        });
+        panel.add(updateButton, gbc);
+
+        updateDialog.add(panel, BorderLayout.CENTER);
+        updateDialog.setLocationRelativeTo(parentFrame);
+        updateDialog.setVisible(true);
+    }
+
 }
