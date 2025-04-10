@@ -28,10 +28,12 @@ public class UI {
         
         // Available courses
         availableCourses.add("Mathematics");
-        availableCourses.add("Computer Science");
+        availableCourses.add("History");
         availableCourses.add("Physics");
         availableCourses.add("Chemistry");
         availableCourses.add("Biology");
+        availableCourses.add("English");
+        availableCourses.add("Filipino");
     }
 
     public void createLoginGUI() {
