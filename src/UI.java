@@ -22,7 +22,7 @@ public class UI {
         // Initialize with sample data
         teacherCredentials.put("teacher1", "teacherpass");
         studentCredentials.put("student1", "studentpass");
-        studentInfo.put("student1", new String[]{"John Doe", "S1001"});
+        studentInfo.put("student1", new String[]{"John Wick", "S1001"});
         studentCourses.put("student1", new ArrayList<>());
         studentGrades.put("student1", new HashMap<>());
         
@@ -466,31 +466,36 @@ public class UI {
 
     private void viewStudents(JFrame parentFrame) {
         JDialog studentDialog = new JDialog(parentFrame, "Student List", true);
-        studentDialog.setSize(500, 400);
+        studentDialog.setSize(600, 400);
         studentDialog.setLayout(new BorderLayout());
-        studentDialog.getContentPane().setBackground(new Color(240, 245, 250));
         
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.setBackground(Color.WHITE);
+        // Convert student data to a display-friendly format
+        DefaultListModel<String> listModel = new DefaultListModel<>();
+        for (Map.Entry<String, String[]> entry : studentInfo.entrySet()) {
+            String username = entry.getKey();
+            String[] info = entry.getValue();
+            List<String> courses = studentCourses.getOrDefault(username, new ArrayList<>());
+            Map<String, Integer> grades = studentGrades.getOrDefault(username, new HashMap<>());
+            
+            String studentEntry = String.format(
+                "%-15s | %-20s | %-10s | Courses: %-30s | Grades: %s",
+                username, 
+                info[0],  // Name
+                info[1],  // ID
+                courses,
+                grades
+            );
+            listModel.addElement(studentEntry);
+        }
         
-        JTextArea studentTextArea = new JTextArea();
-        studentTextArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        studentTextArea.setEditable(false);
-
-        StringBuilder studentList = new StringBuilder("Registered Students:\n\n");
-        studentInfo.forEach((username, info) -> 
-            studentList.append("Username: ").append(username)
-                .append("\nName: ").append(info[0])
-                .append("\nID: ").append(info[1])
-                .append("\nCourses: ").append(studentCourses.get(username))
-                .append("\nGrades: ").append(studentGrades.get(username))
-                .append("\n\n"));
-
-        studentTextArea.setText(studentList.toString());
-        panel.add(new JScrollPane(studentTextArea), BorderLayout.CENTER);
+        JList<String> studentList = new JList<>(listModel);
+        studentList.setFont(new Font("Monospaced", Font.PLAIN, 12));
         
-        studentDialog.add(panel, BorderLayout.CENTER);
+        // Add scrolling
+        JScrollPane scrollPane = new JScrollPane(studentList);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        
+        studentDialog.add(scrollPane, BorderLayout.CENTER);
         studentDialog.setLocationRelativeTo(parentFrame);
         studentDialog.setVisible(true);
     }
